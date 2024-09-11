@@ -6,8 +6,14 @@ import {
   signInWithEmailAndPassword,
 } from "firebase/auth";
 import { auth } from "../utils/firebase";
+import { useNavigate } from "react-router-dom";
+import { updateProfile } from "firebase/auth";
+import { useDispatch } from "react-redux";
+import { addUser } from "../utils/userSlice";
 
 const Login = () => {
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
   const [isSign, setIsSign] = useState(true);
   const [errorMessage, setErrorMessage] = useState(null);
 
@@ -17,11 +23,7 @@ const Login = () => {
 
   const handleButtonClick = (e) => {
     e.preventDefault();
-    const message = formValidation(
-    
-      email.current.value,
-      password.current.value
-    );
+    const message = formValidation(email.current.value, password.current.value);
     setErrorMessage(message);
 
     if (message) return;
@@ -37,9 +39,27 @@ const Login = () => {
         .then((userCredential) => {
           // Signed up
           const user = userCredential.user;
-          console.log(user);
 
-          // ...
+          updateProfile(user, {
+            displayName: name.current.value,
+            photoUrl:
+              "https://media.licdn.com/dms/image/v2/D4D03AQHU_fYdtdE2LA/profile-displayphoto-shrink_400_400/profile-displayphoto-shrink_400_400/0/1689621774677?e=1731542400&v=beta&t=00DFmDy_kjgZmwNnUfcuj2bFd80-evUQUr0GSbFAoSk",
+          })
+            .then(() => {
+              const { uid, email, displayName, photoUrl } = auth.currentUser;
+              dispatch(
+                addUser({
+                  uid: uid,
+                  email: email,
+                  displayName: displayName,
+                  photoUrl: photoUrl
+                })
+              );
+              navigate("/browse");
+            })
+            .catch((error) => {
+              setErrorMessage(error.message);
+            });
         })
         .catch((error) => {
           const errorCode = error.code;
@@ -59,6 +79,7 @@ const Login = () => {
           // Signed in
           const user = userCredential.user;
           console.log(user);
+          navigate("/browse");
 
           // ...
         })
